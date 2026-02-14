@@ -34,11 +34,17 @@ jobs:
     - name: Build App Bundle and APK
       run: |
         mkdir "$CREDENTIALS_DIR"
-        echo "$RELEASE_KEYSTORE" | base64 -d > "$CREDENTIALS_DIR/keystore.jks"
+        echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$CREDENTIALS_DIR/keystore.jks"
+        export RELEASE_KEYSTORE_PROPERTIES="$(printf 'KEY_ALIAS=%s\nKEY_PASSWORD=%s\nSTORE_PASSWORD=%s\n' \
+          "$RELEASE_KEY_ALIAS" \
+          "$RELEASE_KEY_PASSWORD" \
+          "$RELEASE_STORE_PASSWORD")"
         ./gradlew bundlePlayRelease assembleFossRelease
       env:
-        RELEASE_KEYSTORE_PROPERTIES: ${{ secrets.RELEASE_KEYSTORE_PROPERTIES }}
-        RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+        RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
         
     - name: Remove any credentials
       if: always()
