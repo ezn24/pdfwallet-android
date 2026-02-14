@@ -2,17 +2,6 @@ name: Create Release Build
 
 on:
   workflow_dispatch:
-    inputs:
-      upload_to_google:
-        description: "Upload to Google Play"
-        required: true
-        type: boolean
-        default: true
-      upload_to_github:
-        description: "Upload to GitHub and create version tag"
-        required: true
-        type: boolean
-        default: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -65,28 +54,19 @@ jobs:
         echo "VERSION_CODE="$(scripts/get_version_code)"" >> $GITHUB_ENV
 
     - name: Create tag and release on GitHub if not already done
-      if: ${{ inputs.upload_to_github }}
       uses: ncipollo/release-action@v1
       with:
         tag: ${{ env.VERSION_CODE }}
         name: ${{ env.VERSION_NAME }}
         bodyFile: fastlane/metadata/android/en-US/changelogs/${{ env.VERSION_CODE }}.txt
-        artifacts: ${{ env.APK_FILE }}
+        artifacts: |
+          ${{ env.APK_FILE }}
+          ${{ env.AAB_FILE }}
+          ${{ env.MAPPING_FILE }}
+          ${{ env.SYMBOLS_FILE }}
         makeLatest: true
         skipIfReleaseExists: true
         artifactErrorsFailBuild: true
-
-    - name: Setup Ruby
-      if: ${{ inputs.upload_to_google }}
-      uses: ruby/setup-ruby@v1
-      with:
-        bundler-cache: true
-
-    - name: Upload app to Google Play
-      if: ${{ inputs.upload_to_google }}
-      run: bundle exec fastlane google
-      env:
-        PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
 
     - name: Upload test reports
       uses: actions/upload-artifact@v4
