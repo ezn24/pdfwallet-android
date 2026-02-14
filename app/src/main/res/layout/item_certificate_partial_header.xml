@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:background="?colorOnPrimary"
+    android:background="?colorSurface"
     android:layout_marginEnd="@dimen/space_small"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
@@ -15,7 +15,7 @@
         android:padding="@dimen/space_small"
         android:textSize="18sp"
         android:singleLine="true"
-        android:textColor="?colorOnSecondary"
+        android:textColor="?colorOnSurface"
         android:ellipsize="marquee"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/deleteIcon"

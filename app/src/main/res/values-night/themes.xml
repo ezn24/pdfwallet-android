@@ -3,7 +3,7 @@
     <style name="Theme.GruenerPass" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primaryColor</item>
         <item name="colorPrimaryVariant">@color/primaryDarkColor</item>
-        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorOnPrimary">@color/pureBlackButtonTextColor</item>
 
         <item name="colorSecondary">@color/secondaryColor</item>
         <item name="colorSecondaryVariant">@color/black</item>
@@ -14,7 +14,10 @@
     </style>
 
     <style name="Theme.GruenerPass.PureBlack" parent="Theme.GruenerPass">
-        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorPrimary">@color/pureBlackButtonColor</item>
+        <item name="colorPrimaryVariant">@color/pureBlackButtonColor</item>
+        <item name="colorSecondary">@color/pureBlackButtonColor</item>
+        <item name="colorOnPrimary">@color/pureBlackButtonTextColor</item>
         <item name="colorSecondaryVariant">@color/black</item>
         <item name="colorSurface">@color/black</item>
         <item name="colorSurfaceContainer">@color/black</item>

@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
-    android:background="?colorSecondaryVariant"
+    android:background="?colorSurface"
     android:paddingTop="@dimen/space_small"
     android:paddingStart="@dimen/space_small"
     android:layout_width="match_parent"
