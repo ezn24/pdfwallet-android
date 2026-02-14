@@ -2,12 +2,20 @@
     <!-- Base application theme. -->
     <style name="Theme.GruenerPass" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primaryColor</item>
+        <item name="colorPrimaryVariant">@color/primaryDarkColor</item>
         <item name="colorOnPrimary">@color/black</item>
+
         <item name="colorSecondary">@color/secondaryColor</item>
+        <item name="colorSecondaryVariant">@color/black</item>
         <item name="colorOnSecondary">@color/white</item>
+
+        <item name="android:colorBackground">@color/black</item>
+        <item name="colorSurface">@color/black</item>
     </style>
 
     <style name="Theme.GruenerPass.PureBlack" parent="Theme.GruenerPass">
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSecondaryVariant">@color/black</item>
         <item name="colorSurface">@color/black</item>
         <item name="colorSurfaceContainer">@color/black</item>
         <item name="android:colorBackground">@color/black</item>
