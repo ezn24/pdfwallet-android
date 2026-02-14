@@ -1,10 +1,13 @@
 package com.michaeltroger.gruenerpass
 
 import android.app.Application
+import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import com.michaeltroger.gruenerpass.cache.BitmapCache
 import com.michaeltroger.gruenerpass.migration.AppMigrator
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.color.DynamicColorsOptions
 import com.michaeltroger.gruenerpass.pro.IsProUnlockedUseCase
 import com.michaeltroger.gruenerpass.pro.PurchaseUpdateUseCase
 import dagger.hilt.android.HiltAndroidApp
@@ -24,8 +27,21 @@ class GreenPassApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        DynamicColors.applyToActivitiesIfAvailable(this, DynamicColorsOptions.Builder()
+            .setPrecondition { _, _ -> !isPureBlackDarkThemeEnabled() }
+            .build()
+        )
         updateTheme()
         appMigrator.performMigration()
+    }
+
+    private fun isPureBlackDarkThemeEnabled(): Boolean {
+        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        if (!isDarkMode) return false
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        return prefs.getBoolean(getString(R.string.key_preference_pure_black_dark_theme), false)
     }
 
     private fun updateTheme() {

@@ -1,6 +1,7 @@
 package com.michaeltroger.gruenerpass
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -22,6 +23,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.preference.PreferenceManager
 import com.michaeltroger.gruenerpass.certificates.dialogs.CertificateErrors
 import com.michaeltroger.gruenerpass.extensions.getUri
 import com.michaeltroger.gruenerpass.navigation.GetAutoRedirectDestinationUseCase
@@ -65,6 +67,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AddFile {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
+        applyPureBlackDarkThemeIfNeeded()
         super.onCreate(savedInstanceState)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -98,6 +101,18 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AddFile {
                     handleEvent(it)
                 }
             }
+        }
+    }
+
+
+    private fun applyPureBlackDarkThemeIfNeeded() {
+        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        if (!isDarkMode) return
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        if (prefs.getBoolean(getString(R.string.key_preference_pure_black_dark_theme), false)) {
+            setTheme(R.style.Theme_GruenerPass_PureBlack)
         }
     }
 

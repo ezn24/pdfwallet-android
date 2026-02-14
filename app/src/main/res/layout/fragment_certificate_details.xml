@@ -5,7 +5,7 @@
     android:id="@+id/certificate_fullscreen"
     android:paddingTop="@dimen/space_small"
     android:paddingStart="@dimen/space_small"
-    android:background="?colorSecondaryVariant"
+    android:background="?colorSurface"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:ignore="Overdraw,RtlSymmetry" />

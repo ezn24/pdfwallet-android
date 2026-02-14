@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?colorOnPrimary"
+    android:background="?colorSurface"
     android:id="@+id/certificate_list_item_root"
     android:paddingHorizontal="@dimen/space_medium">
 
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:textSize="18sp"
-        android:textColor="?colorOnSecondary"
+        android:textColor="?colorOnSurface"
         android:singleLine="true"
         android:paddingVertical="@dimen/space_medium"
         app:layout_constraintTop_toTopOf="parent"

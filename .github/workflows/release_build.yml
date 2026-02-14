@@ -2,17 +2,6 @@ name: Create Release Build
 
 on:
   workflow_dispatch:
-    inputs:
-      upload_to_google:
-        description: "Upload to Google Play"
-        required: true
-        type: boolean
-        default: true
-      upload_to_github:
-        description: "Upload to GitHub and create version tag"
-        required: true
-        type: boolean
-        default: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -45,11 +34,17 @@ jobs:
     - name: Build App Bundle and APK
       run: |
         mkdir "$CREDENTIALS_DIR"
-        echo "$RELEASE_KEYSTORE" | base64 -d > "$CREDENTIALS_DIR/keystore.jks"
+        echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$CREDENTIALS_DIR/keystore.jks"
+        export RELEASE_KEYSTORE_PROPERTIES="$(printf 'KEY_ALIAS=%s\nKEY_PASSWORD=%s\nSTORE_PASSWORD=%s\n' \
+          "$RELEASE_KEY_ALIAS" \
+          "$RELEASE_KEY_PASSWORD" \
+          "$RELEASE_STORE_PASSWORD")"
         ./gradlew bundlePlayRelease assembleFossRelease
       env:
-        RELEASE_KEYSTORE_PROPERTIES: ${{ secrets.RELEASE_KEYSTORE_PROPERTIES }}
-        RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+        RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
         
     - name: Remove any credentials
       if: always()
@@ -65,28 +60,19 @@ jobs:
         echo "VERSION_CODE="$(scripts/get_version_code)"" >> $GITHUB_ENV
 
     - name: Create tag and release on GitHub if not already done
-      if: ${{ inputs.upload_to_github }}
       uses: ncipollo/release-action@v1
       with:
         tag: ${{ env.VERSION_CODE }}
         name: ${{ env.VERSION_NAME }}
         bodyFile: fastlane/metadata/android/en-US/changelogs/${{ env.VERSION_CODE }}.txt
-        artifacts: ${{ env.APK_FILE }}
+        artifacts: |
+          ${{ env.APK_FILE }}
+          ${{ env.AAB_FILE }}
+          ${{ env.MAPPING_FILE }}
+          ${{ env.SYMBOLS_FILE }}
         makeLatest: true
         skipIfReleaseExists: true
         artifactErrorsFailBuild: true
-
-    - name: Setup Ruby
-      if: ${{ inputs.upload_to_google }}
-      uses: ruby/setup-ruby@v1
-      with:
-        bundler-cache: true
-
-    - name: Upload app to Google Play
-      if: ${{ inputs.upload_to_google }}
-      run: bundle exec fastlane google
-      env:
-        PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
 
     - name: Upload test reports
       uses: actions/upload-artifact@v4

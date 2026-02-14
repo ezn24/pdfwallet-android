@@ -37,6 +37,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         setupBiometricSetting()
         setupForceTheme()
+        setupPureBlackDarkThemeSetting()
         setupBarcodeSetting()
         setupHalfSizeBarcodeSetting()
         setupLockscreenSetting()
@@ -105,6 +106,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
+
+    private fun setupPureBlackDarkThemeSetting() {
+        val preference = findPreference<SwitchPreference>(
+            getString(R.string.key_preference_pure_black_dark_theme)
+        ) ?: error("Preference is required")
+
+        preference.setOnPreferenceChangeListener { _, _ ->
+            requireActivity().recreate()
+            true
+        }
+    }
     private fun setupBarcodeSetting() {
         val preferenceBarcode = findPreference<DropDownPreference>(
             getString(R.string.key_preference_extract_barcodes)

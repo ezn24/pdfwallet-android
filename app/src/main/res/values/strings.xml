@@ -74,6 +74,8 @@
     <string name="preference_invert_pdf_colors">Invert PDF colors</string>
     <string name="preference_invert_pdf_colors_description">Invert document colors in dark mode.</string>
     <string name="preference_force_theme">Force theme</string>
+    <string name="preference_use_pure_black_dark_theme">Use pure black in dark mode</string>
+    <string name="preference_use_pure_black_dark_theme_description">Reduces glow and can save power on OLED screens.</string>
     <string name="preference_theme_system">System</string>
     <string name="preference_theme_light">Light</string>
     <string name="preference_theme_dark">Dark</string>

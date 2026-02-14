@@ -4,12 +4,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
-    android:background="?colorSecondaryVariant"
+    android:background="?colorSurface"
     android:paddingTop="@dimen/space_small"
     android:paddingStart="@dimen/space_small"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:ignore="Overdraw,RtlSymmetry">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/certificates"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:orientation="horizontal"
+        app:layoutManager=".certificates.pager.CertificateLinearLayoutManager"
+        android:contentDescription="@string/pdfs"/>
 
     <Button
         android:id="@+id/add_button"
@@ -17,17 +29,10 @@
         android:layout_height="wrap_content"
         android:visibility="gone"
         android:text="@string/add"
+        android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/certificates"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        app:layoutManager=".certificates.pager.CertificateLinearLayoutManager"
-        android:contentDescription="@string/pdfs"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
