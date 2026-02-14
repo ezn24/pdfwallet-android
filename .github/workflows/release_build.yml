@@ -67,9 +67,6 @@ jobs:
         bodyFile: fastlane/metadata/android/en-US/changelogs/${{ env.VERSION_CODE }}.txt
         artifacts: |
           ${{ env.APK_FILE }}
-          ${{ env.AAB_FILE }}
-          ${{ env.MAPPING_FILE }}
-          ${{ env.SYMBOLS_FILE }}
         makeLatest: true
         skipIfReleaseExists: true
         artifactErrorsFailBuild: true
