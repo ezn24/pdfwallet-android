@@ -16,4 +16,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="pureBlackButtonColor">#FF2A2A2A</color>
     <color name="pureBlackButtonTextColor">#FFFFFFFF</color>
+    <color name="pureBlackControlHighlight">#33FFFFFF</color>
 </resources>
