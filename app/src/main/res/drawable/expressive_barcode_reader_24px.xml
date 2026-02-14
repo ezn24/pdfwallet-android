@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/preference_icon_expressive_bg"/>
-    <item android:width="18dp" android:height="18dp" android:gravity="center" android:tint="?attr/colorOnSurface" android:drawable="@drawable/barcode_reader_24px"/>
-</layer-list>
