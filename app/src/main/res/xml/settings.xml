@@ -89,6 +89,13 @@
         android:entries="@array/preference_theme_entries"
         android:entryValues="@array/preference_theme_entry_values"/>
 
+    <SwitchPreference
+        android:key="@string/key_preference_pure_black_dark_theme"
+        android:icon="@drawable/contrast_24px"
+        android:title="@string/preference_use_pure_black_dark_theme"
+        android:summary="@string/preference_use_pure_black_dark_theme_description"
+        android:defaultValue="false"/>
+
     <com.michaeltroger.gruenerpass.settings.ValidateSwitchPreference
         android:key="@string/key_preference_invert_pdf_colors"
         android:title="@string/preference_invert_pdf_colors"

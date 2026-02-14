@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import com.michaeltroger.gruenerpass.cache.BitmapCache
 import com.michaeltroger.gruenerpass.migration.AppMigrator
+import com.google.android.material.color.DynamicColors
 import com.michaeltroger.gruenerpass.pro.IsProUnlockedUseCase
 import com.michaeltroger.gruenerpass.pro.PurchaseUpdateUseCase
 import dagger.hilt.android.HiltAndroidApp
@@ -24,6 +25,7 @@ class GreenPassApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        DynamicColors.applyToActivitiesIfAvailable(this)
         updateTheme()
         appMigrator.performMigration()
     }
