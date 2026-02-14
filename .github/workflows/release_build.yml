@@ -2,6 +2,7 @@ name: Create Release Build
 
 on:
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -9,14 +10,19 @@ jobs:
     env:
       JAVA_VERSION: '17'
       CREDENTIALS_DIR: 'credentials'
-      AAB_FILE: 'app/build/outputs/bundle/playRelease/app-play-release.aab'
       APK_FILE: 'app/build/outputs/apk/foss/release/app-foss-release.apk'
-      MAPPING_FILE: 'app/build/outputs/mapping/playRelease/mapping.txt'
-      SYMBOLS_FILE: 'app/build/intermediates/merged_native_libs/playRelease/mergePlayReleaseNativeLibs/out/lib/archive.zip'
 
     steps:
     - name: Checkout repo
       uses: actions/checkout@v5
+
+    # 1. 生成基於時間的版本資訊
+    - name: Generate Version Info
+      run: |
+        # Version Name 格式: 2026.02.15 (日期)
+        echo "VERSION_NAME=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
+        # Version Code 格式: 26021501 (YYMMDD + 流水號，確保為整數且隨時間遞增)
+        echo "VERSION_CODE=$(date +'%y%m%d%H')" >> $GITHUB_ENV
 
     - name: Set up JDK
       uses: actions/setup-java@v5
@@ -24,10 +30,13 @@ jobs:
         java-version: ${{ env.JAVA_VERSION }}
         distribution: 'temurin'
         cache: 'gradle'
+
     - name: Run Detekt
       run: ./gradlew detekt
+
     - name: Run Lint
       run: ./gradlew lintRelease
+
     - name: Run unit tests
       run: ./gradlew testPlayDebugUnitTest
       
@@ -35,11 +44,11 @@ jobs:
       run: |
         mkdir "$CREDENTIALS_DIR"
         echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$CREDENTIALS_DIR/keystore.jks"
-        export RELEASE_KEYSTORE_PROPERTIES="$(printf 'KEY_ALIAS=%s\nKEY_PASSWORD=%s\nSTORE_PASSWORD=%s\n' \
-          "$RELEASE_KEY_ALIAS" \
-          "$RELEASE_KEY_PASSWORD" \
-          "$RELEASE_STORE_PASSWORD")"
-        ./gradlew bundlePlayRelease assembleFossRelease
+        
+        # 將生成的版本資訊傳遞給 Gradle
+        ./gradlew bundlePlayRelease assembleFossRelease \
+          -PversionName="${{ env.VERSION_NAME }}" \
+          -PversionCode="${{ env.VERSION_CODE }}"
       env:
         RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
@@ -50,33 +59,17 @@ jobs:
       if: always()
       run: rm -rd "$CREDENTIALS_DIR"
 
-    - name: Create native symbols zip file
-      if: always()
-      run: cd app/build/intermediates/merged_native_libs/playRelease/mergePlayReleaseNativeLibs/out/lib && zip -r archive.zip */
-
-    - name: Extract version code and version name
-      run: |
-        echo "VERSION_NAME="$(scripts/get_version_name)"" >> $GITHUB_ENV
-        echo "VERSION_CODE="$(scripts/get_version_code)"" >> $GITHUB_ENV
+    # (原本 Extract version code 的步驟可以移除，因為我們已經定義在 ENV 了)
 
     - name: Create tag and release on GitHub if not already done
       uses: ncipollo/release-action@v1
       with:
-        tag: ${{ env.VERSION_CODE }}
-        name: ${{ env.VERSION_NAME }}
-        bodyFile: fastlane/metadata/android/en-US/changelogs/${{ env.VERSION_CODE }}.txt
+        tag: v${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
+        name: Release ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})
+        # 注意：如果 changelog 檔名依賴 VERSION_CODE，請確保該檔案存在
+        body: "Auto-generated release for version ${{ env.VERSION_NAME }}"
         artifacts: |
           ${{ env.APK_FILE }}
         makeLatest: true
         skipIfReleaseExists: true
         artifactErrorsFailBuild: true
-
-    - name: Upload test reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test_reports
-        path: |
-          */build/reports/detekt/detekt.html
-          */build/reports/lint-results-release.html
-          */build/reports/tests/testPlayReleaseUnitTest/
