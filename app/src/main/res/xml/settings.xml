@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <Preference
-        android:icon="@drawable/credit_card_heart_24px"
+        android:icon="@drawable/expressive_credit_card_heart_24px"
         android:summary="@string/preference_support_this_project_description"
         app:isPreferenceVisible="false"
         tools:isPreferenceVisible="true"
@@ -21,14 +21,14 @@
 
     <com.michaeltroger.gruenerpass.settings.ValidateSwitchPreference
         android:key="@string/key_preference_biometric"
-        android:icon="@drawable/security_24"
+        android:icon="@drawable/expressive_security_24"
         android:title="@string/require_authentication"
         app:isPreferenceVisible="false"
         tools:isPreferenceVisible="true"/>
 
     <DropDownPreference
         android:key="@string/key_preference_extract_barcodes"
-        android:icon="@drawable/qr_code_24"
+        android:icon="@drawable/expressive_qr_code_24"
         android:title="@string/preference_barcode"
         app:useSimpleSummaryProvider="true"
         android:defaultValue="@string/key_preference_barcodes_extended"
@@ -37,35 +37,35 @@
 
     <com.michaeltroger.gruenerpass.settings.ValidateSwitchPreference
         android:key="@string/key_preference_half_size_barcodes"
-        android:icon="@drawable/barcode_reader_24px"
+        android:icon="@drawable/expressive_barcode_reader_24px"
         android:title="@string/preference_half_size_barcodes"
         android:summary="@string/preference_half_size_barcodes_description"
         android:defaultValue="false"/>
 
     <SwitchPreference
         android:key="@string/key_preference_show_list_layout"
-        android:icon="@drawable/list_24px"
+        android:icon="@drawable/expressive_list_24px"
         android:title="@string/preference_show_list_layout"
         android:summary="@string/preference_show_list_layout_description"
         android:defaultValue="false"/>
 
     <SwitchPreference
         android:key="@string/key_preference_full_brightness"
-        android:icon="@drawable/brightness_high_24"
+        android:icon="@drawable/expressive_brightness_high_24"
         android:title="@string/preference_max_brightness"
         android:summary="@string/preference_max_brightness_description"
         android:defaultValue="false"/>
 
     <SwitchPreference
         android:key="@string/key_preference_add_documents_front"
-        android:icon="@drawable/sort_24px"
+        android:icon="@drawable/expressive_sort_24px"
         android:title="@string/preference_add_documents_front"
         android:summary="@string/preference_add_documents_front_description"
         android:defaultValue="false"/>
 
     <SwitchPreference
         android:key="@string/key_preference_show_on_locked_screen"
-        android:icon="@drawable/door_open_24"
+        android:icon="@drawable/expressive_door_open_24"
         android:title="@string/preference_add_show_on_locked_screen"
         android:summary="@string/preference_add_show_on_locked_screen_description"
         android:defaultValue="false"
@@ -74,7 +74,7 @@
 
     <SwitchPreference
         android:key="@string/key_preference_prevent_screenshots"
-        android:icon="@drawable/screenshot_24"
+        android:icon="@drawable/expressive_screenshot_24"
         android:title="@string/preference_prevent_screenshots"
         android:summary="@string/preference_prevent_screenshots_description"
         android:defaultValue="true"
@@ -82,7 +82,7 @@
 
     <DropDownPreference
         android:key="@string/key_preference_force_theme"
-        android:icon="@drawable/contrast_24px"
+        android:icon="@drawable/expressive_contrast_24px"
         android:title="@string/preference_force_theme"
         app:useSimpleSummaryProvider="true"
         android:defaultValue="@string/key_preference_theme_system"
@@ -91,7 +91,7 @@
 
     <SwitchPreference
         android:key="@string/key_preference_pure_black_dark_theme"
-        android:icon="@drawable/contrast_24px"
+        android:icon="@drawable/expressive_contrast_24px"
         android:title="@string/preference_use_pure_black_dark_theme"
         android:summary="@string/preference_use_pure_black_dark_theme_description"
         android:defaultValue="false"/>
@@ -100,6 +100,6 @@
         android:key="@string/key_preference_invert_pdf_colors"
         android:title="@string/preference_invert_pdf_colors"
         android:summary="@string/preference_invert_pdf_colors_description"
-        android:icon="@drawable/invert_colors_24px"
+        android:icon="@drawable/expressive_invert_colors_24px"
         android:defaultValue="false"/>
 </PreferenceScreen>
