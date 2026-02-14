@@ -2,7 +2,6 @@ name: Create Release Build
 
 on:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,19 +9,14 @@ jobs:
     env:
       JAVA_VERSION: '17'
       CREDENTIALS_DIR: 'credentials'
+      AAB_FILE: 'app/build/outputs/bundle/playRelease/app-play-release.aab'
       APK_FILE: 'app/build/outputs/apk/foss/release/app-foss-release.apk'
+      MAPPING_FILE: 'app/build/outputs/mapping/playRelease/mapping.txt'
+      SYMBOLS_FILE: 'app/build/intermediates/merged_native_libs/playRelease/mergePlayReleaseNativeLibs/out/lib/archive.zip'
 
     steps:
     - name: Checkout repo
       uses: actions/checkout@v5
-
-    # 1. 生成基於時間的版本資訊
-    - name: Generate Version Info
-      run: |
-        # Version Name 格式: 2026.02.15 (日期)
-        echo "VERSION_NAME=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
-        # Version Code 格式: 26021501 (YYMMDD + 流水號，確保為整數且隨時間遞增)
-        echo "VERSION_CODE=$(date +'%y%m%d%H')" >> $GITHUB_ENV
 
     - name: Set up JDK
       uses: actions/setup-java@v5
@@ -30,46 +24,71 @@ jobs:
         java-version: ${{ env.JAVA_VERSION }}
         distribution: 'temurin'
         cache: 'gradle'
-
     - name: Run Detekt
       run: ./gradlew detekt
-
     - name: Run Lint
       run: ./gradlew lintRelease
-
     - name: Run unit tests
       run: ./gradlew testPlayDebugUnitTest
-      
+
     - name: Build App Bundle and APK
       run: |
         mkdir "$CREDENTIALS_DIR"
         echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$CREDENTIALS_DIR/keystore.jks"
-        
-        # 將生成的版本資訊傳遞給 Gradle
-        ./gradlew bundlePlayRelease assembleFossRelease \
-          -PversionName="${{ env.VERSION_NAME }}" \
-          -PversionCode="${{ env.VERSION_CODE }}"
+        export RELEASE_KEYSTORE_PROPERTIES="$(printf 'KEY_ALIAS=%s\nKEY_PASSWORD=%s\nSTORE_PASSWORD=%s\n' \
+          "$RELEASE_KEY_ALIAS" \
+          "$RELEASE_KEY_PASSWORD" \
+          "$RELEASE_STORE_PASSWORD")"
+        ./gradlew bundlePlayRelease assembleFossRelease
       env:
         RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
-        
+
     - name: Remove any credentials
       if: always()
       run: rm -rd "$CREDENTIALS_DIR"
 
-    # (原本 Extract version code 的步驟可以移除，因為我們已經定義在 ENV 了)
+    - name: Create native symbols zip file
+      if: always()
+      run: cd app/build/intermediates/merged_native_libs/playRelease/mergePlayReleaseNativeLibs/out/lib && zip -r archive.zip */
+
+    - name: Extract version code and version name
+      run: |
+        echo "VERSION_NAME="$(scripts/get_version_name)"" >> $GITHUB_ENV
+        echo "VERSION_CODE="$(scripts/get_version_code)"" >> $GITHUB_ENV
+
+    - name: Get current date
+      id: date
+      run: |
+        # 產生格式如 20260215 的版本代碼 (Tag)
+        echo "BUILD_DATE_TAG=$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+        # 產生格式如 2026-02-15 的發佈名稱 (Name)
+        echo "BUILD_DATE_NAME=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_ENV
 
     - name: Create tag and release on GitHub if not already done
       uses: ncipollo/release-action@v1
       with:
-        tag: v${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
-        name: Release ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})
-        # 注意：如果 changelog 檔名依賴 VERSION_CODE，請確保該檔案存在
-        body: "Auto-generated release for version ${{ env.VERSION_NAME }}"
+        # 使用日期作為 Tag (例如: 202602150128)
+        tag: ${{ env.BUILD_DATE_TAG }}
+        # 使用日期作為 Release 標題 (例如: 2026-02-15 01:28)
+        name: "Release ${{ env.BUILD_DATE_NAME }}"
+        # 備註：如果你的 changelog 檔名還是依賴原本的 VERSION_CODE，
+        # 這裡可能需要手動指定或保持原樣。以下暫時保留原本邏輯。
+        body: "Automated build from ${{ github.sha }}"
         artifacts: |
           ${{ env.APK_FILE }}
         makeLatest: true
         skipIfReleaseExists: true
         artifactErrorsFailBuild: true
+
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test_reports
+        path: |
+          */build/reports/detekt/detekt.html
+          */build/reports/lint-results-release.html
+          */build/reports/tests/testPlayReleaseUnitTest/
