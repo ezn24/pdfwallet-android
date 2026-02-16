@@ -2,6 +2,7 @@ package com.michaeltroger.gruenerpass.settings
 
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.net.toUri
@@ -11,6 +12,7 @@ import androidx.preference.DropDownPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
+import com.google.android.material.color.MaterialColors
 import com.michaeltroger.gruenerpass.R
 import com.michaeltroger.gruenerpass.cache.BitmapCache
 import com.michaeltroger.gruenerpass.lock.AppLockedRepo
@@ -49,6 +51,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onResume() {
         super.onResume()
         setupBilling()
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val surfaceColor = MaterialColors.getColor(view, com.google.android.material.R.attr.colorSurface)
+        view.setBackgroundColor(surfaceColor)
+        listView.setBackgroundColor(surfaceColor)
     }
 
     private fun setupBilling() {
