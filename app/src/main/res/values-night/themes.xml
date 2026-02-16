@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.GruenerPass" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
+        <item name="colorOnSecondary">#E6FFFFFF</item>
+        <item name="colorOnSurface">#FFFFFFFF</item>
+        <item name="colorOnSurfaceVariant">#E6FFFFFF</item>
+    </style>
+</resources>
