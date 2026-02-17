@@ -40,6 +40,6 @@
     </style>
 
     <style name="MyThemeOverlay_Toolbar" parent="ThemeOverlay.Material3.ActionBar">
-        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorOnPrimary">?attr/colorOnSurface</item>
     </style>
 </resources>
