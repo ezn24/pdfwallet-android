@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.view.View
+import android.view.ViewGroup
 import androidx.core.graphics.scale
 import androidx.core.view.isVisible
+import androidx.core.view.setMargins
 import com.michaeltroger.gruenerpass.R
 import com.michaeltroger.gruenerpass.barcode.BarcodeRenderer
 import com.michaeltroger.gruenerpass.cache.BitmapCache
@@ -36,6 +38,7 @@ class PdfPageItem(
     private val searchBarcode: BarcodeSearchMode,
     private val invertColors: Boolean,
     private val showBarcodesInHalfSize: Boolean,
+    private val generateNewBarcode: Boolean,
     ) : BindableItem<ItemCertificatePartialPdfPageBinding>() {
 
     private val scope = CoroutineScope(
@@ -44,14 +47,15 @@ class PdfPageItem(
 
     private var job: Job? = null
 
-    private val barcodeCacheKey = "barcode-$fileName-$pageIndex"
-    private val pdfCacheKey = "pdf-$fileName-$pageIndex"
+    private val barcodeCacheKey = "barcode-$fileName-$pageIndex-$generateNewBarcode"
+    private val pdfCacheKey = "pdf-$fileName-$pageIndex-$generateNewBarcode"
 
     override fun initializeViewBinding(view: View): ItemCertificatePartialPdfPageBinding
         = ItemCertificatePartialPdfPageBinding.bind(view)
 
     override fun getLayout() = R.layout.item_certificate_partial_pdf_page
 
+    @Suppress("CyclomaticComplexMethod")
     override fun bind(viewBinding: ItemCertificatePartialPdfPageBinding, position: Int) {
         job = scope.launch {
             val context = viewBinding.root.context
@@ -67,6 +71,12 @@ class PdfPageItem(
             } else {
                 viewBinding.barcode.scaleX = SCALE_FULL
                 viewBinding.barcode.scaleY = SCALE_FULL
+            }
+
+            if (generateNewBarcode) {
+                (viewBinding.barcode.layoutParams as? ViewGroup.MarginLayoutParams)?.setMargins(30.dpToPx(context))
+            } else {
+                (viewBinding.barcode.layoutParams as? ViewGroup.MarginLayoutParams)?.setMargins(0.dpToPx(context))
             }
 
             if (pdf == null) {
@@ -124,7 +134,8 @@ class PdfPageItem(
         barcode = if (searchBarcode != BarcodeSearchMode.DISABLED) {
             barcodeRenderer.getBarcodeIfPresent(
                 document = tempPdf,
-                tryExtraHard = searchBarcode == BarcodeSearchMode.EXTENDED
+                tryExtraHard = searchBarcode == BarcodeSearchMode.EXTENDED,
+                generateNewBarcode = generateNewBarcode,
             )
         } else {
             null
@@ -166,7 +177,8 @@ class PdfPageItem(
     override fun hasSameContentAs(other: Item<*>): Boolean {
         return (other as? PdfPageItem)?.pageIndex == pageIndex &&
                 other.fileName == fileName &&
-                other.showBarcodesInHalfSize == showBarcodesInHalfSize
+                other.showBarcodesInHalfSize == showBarcodesInHalfSize  &&
+                other.generateNewBarcode == generateNewBarcode
     }
 
     private val Context.screenWidth: Int
@@ -174,6 +186,10 @@ class PdfPageItem(
 
     private val Context.screenHeight: Int
         get() = resources.displayMetrics.heightPixels
+}
+
+private fun Int.dpToPx(context: Context): Int {
+    return (this * context.resources.displayMetrics.density).toInt()
 }
 
 private fun isDarkMode(context: Context): Boolean {
