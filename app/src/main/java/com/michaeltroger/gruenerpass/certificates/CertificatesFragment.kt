@@ -2,6 +2,7 @@ package com.michaeltroger.gruenerpass.certificates
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -9,7 +10,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.withStarted
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.michaeltroger.gruenerpass.AddFile
@@ -19,10 +22,13 @@ import com.michaeltroger.gruenerpass.certificates.dialogs.CertificateDialogs
 import com.michaeltroger.gruenerpass.certificates.dialogs.CertificateErrors
 import com.michaeltroger.gruenerpass.certificates.pager.item.CertificateItem
 import com.michaeltroger.gruenerpass.certificates.sharing.PdfSharing
+import com.michaeltroger.gruenerpass.certificates.states.TagFilterType
 import com.michaeltroger.gruenerpass.certificates.states.ViewEvent
 import com.michaeltroger.gruenerpass.certificates.states.ViewState
+import com.michaeltroger.gruenerpass.certificateslist.pager.item.CertificateListItem
 import com.michaeltroger.gruenerpass.databinding.FragmentCertificatesBinding
-import com.michaeltroger.gruenerpass.db.Certificate
+import com.michaeltroger.gruenerpass.db.CertificateWithTags
+import com.michaeltroger.gruenerpass.db.Tag
 import com.michaeltroger.gruenerpass.settings.BarcodeSearchMode
 import com.xwray.groupie.GroupieAdapter
 import dagger.hilt.android.AndroidEntryPoint
@@ -36,6 +42,7 @@ import javax.inject.Inject
 private const val TOUCH_SLOP_FACTOR = 8
 private const val SCROLL_TO_DELAY_MS = 500L
 
+@Suppress("TooManyFunctions")
 @AndroidEntryPoint
 class CertificatesFragment : Fragment(R.layout.fragment_certificates) {
 
@@ -58,6 +65,8 @@ class CertificatesFragment : Fragment(R.layout.fragment_certificates) {
     lateinit var barcodeRenderer: BarcodeRenderer
 
     private lateinit var menuProvider: CertificatesMenuProvider
+    private var originalTouchSlop: Int? = null
+    private var snapHelper: PagerSnapHelper? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -68,19 +77,36 @@ class CertificatesFragment : Fragment(R.layout.fragment_certificates) {
         binding = FragmentCertificatesBinding.bind(view)
         val binding = binding!!
 
-        PagerSnapHelper().attachToRecyclerView(binding.certificates)
+        val horizontalLayoutManager = LinearLayoutManager(
+            requireContext(),
+            RecyclerView.HORIZONTAL,
+            false
+        )
+        binding.certificates.layoutManager = horizontalLayoutManager
 
-        try { // reduce scroll sensitivity for horizontal scrolling to improve vertical scrolling
-            val touchSlopField = RecyclerView::class.java.getDeclaredField("mTouchSlop")
-            touchSlopField.isAccessible = true
-            val touchSlop = touchSlopField.get(binding.certificates) as Int
-            touchSlopField.set(binding.certificates, touchSlop * TOUCH_SLOP_FACTOR)
-        } catch (ignore: Exception) {}
+        snapHelper = PagerSnapHelper()
+        snapHelper?.attachToRecyclerView(binding.certificates)
 
         binding.certificates.adapter = adapter
 
         binding.addButton.setOnClickListener {
             vm.onAddFileSelected()
+        }
+
+        binding.resetFiltersButton.setOnClickListener {
+            vm.onClearFilters()
+        }
+
+        binding.filterByTagsButton.setOnClickListener {
+            vm.onFilterTagsSelected()
+        }
+
+        binding.toggleFilterTypeButton.setOnClickListener {
+            vm.onToggleTagFilterType()
+        }
+
+        binding.filterHeader.setOnClickListener {
+            vm.onToggleFilterExpanded()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -116,6 +142,9 @@ class CertificatesFragment : Fragment(R.layout.fragment_certificates) {
                 }
             }
             is ViewEvent.GoToCertificate -> goToCertificate(it)
+            ViewEvent.ShowManageTagsDialog -> showManageTagsDialog()
+            ViewEvent.ShowFilterTagsDialog -> showFilterTagsDialog()
+            is ViewEvent.ShowAssignTagsDialog -> showAssignTagsDialog(it.certificateId)
             is ViewEvent.ShareMultiple -> {
                 pdfSharing.openShareAllFilePicker(
                     context = requireContext(),
@@ -189,18 +218,115 @@ class CertificatesFragment : Fragment(R.layout.fragment_certificates) {
     private fun updateState(state: ViewState) {
         menuProvider.updateMenuState(state)
         binding?.addButton?.isVisible = state.showAddButton
+
+        updateSearchResults(state)
+
         when (state) {
             is ViewState.Initial -> {} // nothing to do
             is ViewState.Empty -> {
                 adapter.clear()
             }
-            is ViewState.Normal -> showCertificateState(
-                documents = state.documents,
-                searchBarcode = state.searchBarcode,
-                invertColors = state.invertColors,
-                showBarcodesInHalfSize = state.showBarcodesInHalfSize,
-                generateNewBarcode = state.generateNewBarcode,
+            is ViewState.Normal -> {
+                val layoutManager = binding?.certificates?.layoutManager as? LinearLayoutManager
+                val layoutParams = binding?.certificates?.layoutParams as? ViewGroup.MarginLayoutParams
+                val isListLayout = state.isListLayout
+
+                if (isListLayout) {
+                    layoutManager?.orientation = RecyclerView.VERTICAL
+                    snapHelper?.attachToRecyclerView(null)
+                    layoutParams?.setMargins(
+                        resources.getDimensionPixelSize(R.dimen.space_small),
+                        resources.getDimensionPixelSize(R.dimen.space_small),
+                        resources.getDimensionPixelSize(R.dimen.space_small),
+                        0,
+                    )
+                    binding?.certificates?.let {
+                        restoreOriginalTouchSlop(it)
+                    }
+                } else {
+                    layoutManager?.orientation = RecyclerView.HORIZONTAL
+                    snapHelper?.attachToRecyclerView(binding?.certificates)
+                    layoutParams?.setMargins(
+                        resources.getDimensionPixelSize(R.dimen.space_small),
+                        resources.getDimensionPixelSize(R.dimen.space_small),
+                        0,
+                        0,
+                    )
+                    binding?.certificates?.let {
+                        setHorizontalTouchSlop(it)
+                    }
+                }
+
+                binding?.certificates?.layoutParams = layoutParams
+
+                showCertificateState(
+                    documents = state.documents,
+                    searchBarcode = state.searchBarcode,
+                    invertColors = state.invertColors,
+                    showBarcodesInHalfSize = state.showBarcodesInHalfSize,
+                    generateNewBarcode = state.generateNewBarcode,
+                    isListLayout = isListLayout,
+                )
+            }
+        }
+    }
+
+    private fun setHorizontalTouchSlop(recyclerView: RecyclerView) {
+        try {
+            val touchSlopField = RecyclerView::class.java.getDeclaredField("mTouchSlop")
+            touchSlopField.isAccessible = true
+            if (originalTouchSlop == null) {
+                originalTouchSlop = touchSlopField.get(recyclerView) as Int
+            }
+            val horizontalTouchSlop = originalTouchSlop!! * TOUCH_SLOP_FACTOR
+            touchSlopField.set(recyclerView, horizontalTouchSlop)
+        } catch (ignore: Exception) {}
+    }
+
+    private fun restoreOriginalTouchSlop(recyclerView: RecyclerView) {
+        try {
+            val touchSlopField = RecyclerView::class.java.getDeclaredField("mTouchSlop")
+            touchSlopField.isAccessible = true
+            originalTouchSlop?.let {
+                touchSlopField.set(recyclerView, it)
+            }
+        } catch (ignore: Exception) {}
+    }
+
+    @Suppress("MagicNumber")
+    private fun updateSearchResults(normalState: ViewState) {
+        if (normalState !is ViewState.Normal) return
+        binding?.filterContainer?.isVisible = normalState.isFiltered
+        val queryText = "\"${normalState.filterSearchText}\""
+        val tagsText = "\"${normalState.filterTagNames.joinToString()}\""
+        if (normalState.isFiltered) {
+            binding?.filterInfoText?.text = when {
+                normalState.filterTagNames.isNotEmpty() && normalState.filterSearchText.isEmpty()
+                    -> getString(R.string.search_results_overview_tags, tagsText)
+
+                normalState.filterTagNames.isEmpty() && normalState.filterSearchText.isNotEmpty()
+                    -> getString(R.string.search_results_overview_query, queryText)
+
+                normalState.filterTagNames.isNotEmpty() && normalState.filterSearchText.isNotEmpty()
+                    -> getString(
+                    R.string.search_results_overview_query_and_tags,
+                    queryText,
+                    tagsText
+                )
+
+                else -> ""
+            }
+
+            binding?.filterTagModeWrapper?.isVisible = normalState.filterTagNames.isNotEmpty()
+            binding?.toggleFilterTypeButton?.text = getString(
+                if (normalState.tagFilterType == TagFilterType.AND) {
+                    R.string.filter_tag_and_mode
+                } else {
+                    R.string.filter_tag_or_mode
+                }
             )
+            binding?.filterControls?.isVisible = normalState.isFilterExpanded
+            binding?.filterExpandIcon?.rotation = if (normalState.isFilterExpanded) 180f else 0f
         }
     }
 
@@ -209,46 +335,169 @@ class CertificatesFragment : Fragment(R.layout.fragment_certificates) {
         menuProvider.onPause()
     }
 
+    @Suppress("LongParameterList", "LongMethod")
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun showCertificateState(
-        documents: List<Certificate>,
+        documents: List<CertificateWithTags>,
         searchBarcode: BarcodeSearchMode,
         invertColors: Boolean,
         showBarcodesInHalfSize: Boolean,
         generateNewBarcode: Boolean,
+        isListLayout: Boolean,
     ) {
-        val items = documents.map { certificate ->
-            CertificateItem(
-                requireContext().applicationContext,
-                fileName = certificate.id,
-                barcodeRenderer = barcodeRenderer,
-                documentName = certificate.name,
-                searchBarcode = searchBarcode,
-                invertColors = invertColors,
-                isDetailView = false,
-                dispatcher = thread,
-                onDeleteCalled = {
-                    vm.onDeleteCalled(certificate.id)
-                },
-                onDocumentNameClicked = {
-                    vm.onChangeDocumentNameSelected(certificate.id, certificate.name)
-                },
-                onShareCalled = {
-                    vm.onShareSelected(certificate)
-                },
-                showBarcodesInHalfSize = showBarcodesInHalfSize,
-                generateNewBarcode = generateNewBarcode,
-            )
+        val items = if (isListLayout) {
+            documents.map { certWithTags ->
+                val certificate = certWithTags.certificate
+                CertificateListItem(
+                    fileName = certificate.id,
+                    documentName = certificate.name,
+                    searchBarcode = searchBarcode != BarcodeSearchMode.DISABLED,
+                    tags = certWithTags.tags,
+                    onDeleteCalled = {
+                        vm.onDeleteCalled(certificate.id)
+                    },
+                    onChangeDocumentNameClicked = {
+                        vm.onChangeDocumentNameSelected(certificate.id, certificate.name)
+                    },
+                    onOpenDetails = {
+                        findNavController().navigate(
+                            R.id.navigate_to_certificateDetails,
+                            Bundle().apply { putString("id", certificate.id) }
+                        )
+                    },
+                    onShareCalled = {
+                        vm.onShareSelected(certificate)
+                    },
+                    onAssignTagsClicked = {
+                        vm.onAssignTagsSelected(certificate.id)
+                    },
+                )
+            }
+        } else {
+            documents.map { certWithTags ->
+                val certificate = certWithTags.certificate
+                CertificateItem(
+                    requireContext().applicationContext,
+                    fileName = certificate.id,
+                    barcodeRenderer = barcodeRenderer,
+                    documentName = certificate.name,
+                    tags = certWithTags.tags,
+                    searchBarcode = searchBarcode,
+                    invertColors = invertColors,
+                    isDetailView = false,
+                    dispatcher = thread,
+                    onDeleteCalled = {
+                        vm.onDeleteCalled(certificate.id)
+                    },
+                    onDocumentNameClicked = {
+                        vm.onChangeDocumentNameSelected(certificate.id, certificate.name)
+                    },
+                    onShareCalled = {
+                        vm.onShareSelected(certificate)
+                    },
+                    onAssignTagsClicked = {
+                        vm.onAssignTagsSelected(certificate.id)
+                    },
+                    showBarcodesInHalfSize = showBarcodesInHalfSize,
+                    generateNewBarcode = generateNewBarcode,
+                )
+            }
         }
         adapter.update(items)
     }
 
     private fun goToCertificate(event: ViewEvent.GoToCertificate) {
         lifecycleScope.launch {
-            if (event.isNewDocument) {
-                delay(SCROLL_TO_DELAY_MS)
+            if (event.isListLayout) {
+                withStarted {
+                    binding?.certificates?.scrollToPosition(event.position)
+                    findNavController().navigate(
+                        R.id.navigate_to_certificateDetails,
+                        Bundle().apply { putString("id", event.id) }
+                    )
+                }
+            } else {
+                if (event.isNewDocument) {
+                    delay(SCROLL_TO_DELAY_MS)
+                }
+                binding?.certificates?.smoothScrollToPosition(event.position)
             }
-            binding?.certificates?.smoothScrollToPosition(event.position)
         }
+    }
+
+    private fun showFilterTagsDialog() {
+        val currentState = vm.viewState.value as? ViewState.Normal ?: return
+        val availableTags = currentState.availableTags
+        val activeTagIds = currentState.filterTagIds
+
+        certificateDialogs.showFilterTagsDialog(
+            context = requireContext(),
+            availableTags = availableTags,
+            activeTagIds = activeTagIds,
+            onTagFilterToggled = vm::onToggleTagFilter,
+            onManageTagsClicked = vm::onManageTagsSelected
+        )
+    }
+
+    private fun showAssignTagsDialog(certificateId: String) {
+        val currentState = vm.viewState.value as? ViewState.Normal ?: return
+        val availableTags = currentState.availableTags
+        val certTags = currentState.documents.find {
+            it.certificate.id == certificateId
+        }?.tags?.map { it.id }?.toSet() ?: emptySet()
+
+        certificateDialogs.showAssignTagsDialog(
+            context = requireContext(),
+            certificateId = certificateId,
+            availableTags = availableTags,
+            assignedTagIds = certTags,
+            onManageTagsClicked = vm::onManageTagsSelected,
+            onTagsAssigned = vm::onUpdateCertificateTags
+        )
+    }
+
+    private fun showManageTagsDialog() {
+        val currentState = vm.viewState.value as? ViewState.Normal ?: return
+        val availableTags = currentState.availableTags
+
+        certificateDialogs.showManageTagsDialog(
+            context = requireContext(),
+            availableTags = availableTags,
+            onEditTagClicked = { showEditTagDialog(it) },
+            onCreateTagClicked = { showCreateTagDialog() }
+        )
+    }
+
+    private fun showCreateTagDialog() {
+        certificateDialogs.showCreateTagDialog(
+            context = requireContext(),
+            onTagCreated = vm::onCreateTag,
+            onCancel = vm::onManageTagsSelected
+        )
+    }
+
+    private fun showEditTagDialog(tag: Tag) {
+        certificateDialogs.showEditTagDialog(
+            context = requireContext(),
+            tag = tag,
+            onTagRenamed = { id, name ->
+                vm.onRenameTag(id, name)
+            },
+            onDeleteTagClicked = {
+                showDeleteTagConfirmationDialog(tag)
+            },
+            onCancel = vm::onManageTagsSelected
+        )
+    }
+
+    private fun showDeleteTagConfirmationDialog(tag: Tag) {
+        certificateDialogs.showDeleteTagConfirmationDialog(
+            context = requireContext(),
+            tag = tag,
+            onDeleteTagConfirmed = { id ->
+                vm.onDeleteTag(id)
+            },
+            onCancel = { showEditTagDialog(tag) }
+        )
     }
 }

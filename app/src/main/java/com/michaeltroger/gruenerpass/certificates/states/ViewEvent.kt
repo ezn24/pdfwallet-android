@@ -11,6 +11,7 @@ sealed class ViewEvent {
         val position: Int,
         val id: String,
         val isNewDocument: Boolean,
+        val isListLayout: Boolean,
     ) : ViewEvent()
     data class Share(val certificate: Certificate) : ViewEvent()
     data class ShareMultiple(val list: List<Certificate>) : ViewEvent()
@@ -23,4 +24,7 @@ sealed class ViewEvent {
     data object ShowMoreScreen : ViewEvent()
     data class ShowChangeDocumentOrderDialog(val originalOrder: List<Certificate>) : ViewEvent()
     data class ShowChangeDocumentNameDialog(val id: String, val originalName: String) : ViewEvent()
+    data object ShowFilterTagsDialog : ViewEvent()
+    data class ShowAssignTagsDialog(val certificateId: String) : ViewEvent()
+    data object ShowManageTagsDialog : ViewEvent()
 }

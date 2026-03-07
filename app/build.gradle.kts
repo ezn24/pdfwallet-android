@@ -1,5 +1,6 @@
 plugins {
     id("greenpass.app-conventions")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -7,8 +8,8 @@ android {
 
     defaultConfig {
         applicationId = "com.michaeltroger.gruenerpass"
-        versionCode = 74
-        versionName = "5.0.0"
+        versionCode = 78
+        versionName = "5.1.3"
     }
 }
 
@@ -37,6 +38,10 @@ dependencies {
     implementation(libs.com.github.lisawray.groupie.viewbinding)
     implementation(libs.com.google.android.material)
     implementation(libs.io.github.panpf.zoomimage.view)
+
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.androidx.test.ext.junit.ktx)
     testImplementation(libs.app.cash.turbine)

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.michaeltroger.gruenerpass.db.AppDatabase
 import com.michaeltroger.gruenerpass.db.CertificateDao
+import com.michaeltroger.gruenerpass.db.TagDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,10 +25,18 @@ object DatabaseModule {
 
     @Singleton
     @Provides
+    fun provideTagDao(appDatabase: AppDatabase): TagDao {
+        return appDatabase.tagDao()
+    }
+
+    @Singleton
+    @Provides
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(
             context.applicationContext,
             AppDatabase::class.java, "greenpass"
-        ).build()
+        )
+            .addMigrations(AppDatabase.MIGRATION_2_3)
+            .build()
     }
 }

@@ -13,7 +13,6 @@ import com.michaeltroger.gruenerpass.certificates.states.ViewState
 class CertificatesMenuProvider(
     private val context: Context,
     private val vm: CertificatesViewModel,
-    private val isListLayout: Boolean = false,
 ) : MenuProvider {
     private var searchView: SearchView? = null
     private var menu: Menu? = null
@@ -110,6 +109,16 @@ class CertificatesMenuProvider(
             true
         }
 
+        R.id.filter_by_tags -> {
+            vm.onFilterTagsSelected()
+            true
+        }
+
+        R.id.manage_tags -> {
+            vm.onManageTagsSelected()
+            true
+        }
+
         else -> false
     }
 
@@ -118,7 +127,7 @@ class CertificatesMenuProvider(
     }
 
     private fun restorePendingSearchQueryFilter(searchMenuItem: MenuItem) {
-        val pendingFilter = (vm.viewState.value as? ViewState.Normal)?.filter ?: return
+        val pendingFilter = (vm.viewState.value as? ViewState.Normal)?.filterSearchText ?: return
         if (pendingFilter.isNotEmpty()) {
             searchMenuItem.expandActionView()
             searchView?.setQuery(pendingFilter, false)
@@ -126,6 +135,7 @@ class CertificatesMenuProvider(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     fun updateMenuState(state: ViewState) {
         menu?.apply {
             findItem(R.id.add)?.isVisible = state.showAddMenuItem
@@ -138,12 +148,12 @@ class CertificatesMenuProvider(
             findItem(R.id.export_all)?.isVisible = state.showExportAllMenuItem
             findItem(R.id.export_filtered)?.isVisible = state.showExportFilteredMenuItem
             findItem(R.id.changeOrder)?.isVisible = state.showChangeOrderMenuItem
-            findItem(R.id.scrollToFirst)?.isVisible = if (isListLayout) {
+            findItem(R.id.scrollToFirst)?.isVisible = if ((state as? ViewState.Normal)?.isListLayout == true) {
                 false
             } else {
                 state.showScrollToFirstMenuItem
             }
-            findItem(R.id.scrollToLast)?.isVisible = if (isListLayout) {
+            findItem(R.id.scrollToLast)?.isVisible = if ((state as? ViewState.Normal)?.isListLayout == true) {
                 false
             } else {
                 state.showScrollToLastMenuItem
@@ -153,10 +163,17 @@ class CertificatesMenuProvider(
                 if (!state.showSearchMenuItem) {
                     collapseActionView()
                 }
+                if (state is ViewState.Normal) {
+                    if (state.filterSearchText.isEmpty()) {
+                        collapseActionView()
+                    }
+                }
             }
+            findItem(R.id.filter_by_tags)?.isVisible = state.showFilterByTagMenuItem
+            findItem(R.id.manage_tags)?.isVisible = state.showManageTagMenuItem
             findItem(R.id.openMore)?.isVisible = state.showMoreMenuItem
             findItem(R.id.switchLayout)?.isVisible = state.showSwitchLayoutMenuItem
-            findItem(R.id.toggleBarcodeSize)?.isVisible = if (isListLayout) {
+            findItem(R.id.toggleBarcodeSize)?.isVisible = if ((state as? ViewState.Normal)?.isListLayout == true) {
                 false
             } else {
                 state.showToggleBarcodeSizeMenuItem
